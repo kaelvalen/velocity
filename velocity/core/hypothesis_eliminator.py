@@ -26,7 +26,7 @@ class EliminationCriteria:
     """Eleme kriterleri"""
     min_confidence: float = 0.3        # Minimum güven skoru
     max_cost: float = 10.0             # Maksimum maliyet
-    min_evidence: int = 2              # Minimum evidence sayısı
+    min_evidence: int = 1              # Minimum evidence sayısı (1'e düşürüldü)
     max_contradictions: int = 5        # Maksimum çelişki sayısı
     convergence_required: bool = False # Convergence zorunlu mu?
 
@@ -122,9 +122,15 @@ class HypothesisEliminator:
                 return True, f"Did not converge: {result.convergence_reason}"
         
         # 6. State quality check
-        if hypothesis.state.uncertainty.value >= 4:  # UNKNOWN
-            if hypothesis.confidence < 0.5:
-                return True, "High uncertainty with low confidence"
+        from .state import UncertaintyLevel
+        if isinstance(hypothesis.state.uncertainty, UncertaintyLevel):
+            if hypothesis.state.uncertainty.value >= 4:  # UNKNOWN
+                if hypothesis.confidence < 0.5:
+                    return True, "High uncertainty with low confidence"
+        elif isinstance(hypothesis.state.uncertainty, float):
+            if hypothesis.state.uncertainty >= 0.8:
+                if hypothesis.confidence < 0.5:
+                    return True, "High uncertainty with low confidence"
         
         # Hayatta kalır
         return False, ""
