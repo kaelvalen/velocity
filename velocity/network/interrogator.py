@@ -13,6 +13,7 @@ from typing import List, Dict, Any, Optional
 from loguru import logger
 from bs4 import BeautifulSoup
 import time
+import os
 
 
 class NetworkInterrogator:
@@ -27,7 +28,8 @@ class NetworkInterrogator:
         self,
         max_parallel: int = 5,
         timeout: float = 10.0,
-        user_agent: str = "Velocity/0.1.0"
+        user_agent: str = "Velocity/0.1.0",
+        use_real_search: bool = True
     ):
         """
         Initialize Network Interrogator
@@ -36,17 +38,36 @@ class NetworkInterrogator:
             max_parallel: Maximum parallel queries
             timeout: Request timeout in seconds
             user_agent: User agent string
+            use_real_search: Use real web search (Google/Bing/DDG)
         """
         self.max_parallel = max_parallel
         self.timeout = timeout
         self.user_agent = user_agent
+        self.use_real_search = use_real_search
+        
+        # Initialize web search engine if enabled
+        if use_real_search:
+            try:
+                from .web_search import WebSearchEngine, NLPProcessor
+                self.web_search = WebSearchEngine(
+                    google_api_key=os.getenv('GOOGLE_API_KEY'),
+                    google_cse_id=os.getenv('GOOGLE_CSE_ID'),
+                    bing_api_key=os.getenv('BING_API_KEY'),
+                    max_results=3,
+                    timeout=int(timeout)
+                )
+                self.nlp = NLPProcessor()
+                logger.info("Real web search enabled")
+            except Exception as e:
+                logger.warning(f"Could not initialize web search: {e}, falling back to simulated")
+                self.use_real_search = False
         
         # Statistics
         self.queries_executed = 0
         self.total_latency = 0.0
         self.errors = 0
         
-        logger.info(f"Network Interrogator initialized (parallel={max_parallel})")
+        logger.info(f"Network Interrogator initialized (parallel={max_parallel}, real_search={use_real_search})")
     
     async def search_parallel(
         self,
@@ -111,7 +132,39 @@ class NetworkInterrogator:
         self.queries_executed += 1
         
         try:
-            # Try multiple sources in order
+            # 0. Try Real Web Search First (if enabled) 🌐
+            if self.use_real_search and hasattr(self, 'web_search'):
+                try:
+                    logger.info(f"🔍 Real web search: {query}")
+                    results = await self.web_search.search(query, source_type="web")
+                    
+                    if results:
+                        best_result = results[0]
+                        content = best_result.content or best_result.snippet
+                        
+                        if content and len(content) > 50:
+                            # NLP processing (no LLM!)
+                            summary = self.nlp.extractive_summarize(content, num_sentences=3)
+                            keywords = self.nlp.extract_keywords(content, top_k=5)
+                            
+                            logger.success(f"✅ Real search: {best_result.source_type}")
+                            
+                            return {
+                                "success": True,
+                                "query": query,
+                                "source": f"{best_result.source_type}:{best_result.url}",
+                                "content": summary,
+                                "metadata": {
+                                    "title": best_result.title,
+                                    "url": best_result.url,
+                                    "keywords": keywords,
+                                    "relevance": best_result.relevance_score,
+                                    "method": "real_web_search+nlp"
+                                }
+                            }
+                except Exception as e:
+                    logger.warning(f"⚠️ Real web search failed: {e}")
+            
             # 1. Wikipedia (best for encyclopedic knowledge)
             try:
                 result = await self._query_wikipedia_simple(query)
@@ -363,6 +416,259 @@ class NetworkInterrogator:
             "quantum computing": "Quantum computing is a type of computation that uses quantum mechanical phenomena like superposition and entanglement. Unlike classical computers that use bits (0 or 1), quantum computers use quantum bits or qubits that can exist in multiple states simultaneously.",
             "artificial intelligence": "Artificial Intelligence (AI) is the simulation of human intelligence processes by machines, especially computer systems. These processes include learning, reasoning, and self-correction. AI applications include expert systems, natural language processing, speech recognition and machine vision.",
             "machine learning": "Machine learning is a subset of artificial intelligence that provides systems the ability to automatically learn and improve from experience without being explicitly programmed. It focuses on developing computer programs that can access data and use it to learn for themselves.",
+            "blockchain": "Blockchain is a distributed ledger technology that maintains a continuously growing list of records called blocks. Each block contains a cryptographic hash of the previous block, timestamp, and transaction data. It provides secure, transparent, and tamper-resistant record-keeping.",
+            "rust": "Rust is a systems programming language focused on safety, concurrency, and performance. Created by Mozilla, it prevents common bugs like null pointer dereferences and data races through its unique ownership system and borrow checker.",
+        }
+        
+        # Code generation responses
+        code_requests = {
+            "python": '''# Simple Python example
+def hello_world():
+    """A simple hello world function"""
+    print("Hello, World!")
+    return "Success"
+
+# Example usage
+if __name__ == "__main__":
+    result = hello_world()
+    print(f"Result: {result}")
+
+# More complex example
+def fibonacci(n):
+    """Calculate fibonacci sequence"""
+    if n <= 1:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+# Calculate first 10 fibonacci numbers
+for i in range(10):
+    print(f"fib({i}) = {fibonacci(i)}")''',
+            
+            "javascript": '''// Simple JavaScript example
+function helloWorld() {
+    console.log("Hello, World!");
+    return "Success";
+}
+
+// Example usage
+const result = helloWorld();
+console.log(`Result: ${result}`);
+
+// More complex example
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n-1) + fibonacci(n-2);
+}
+
+// Calculate first 10 fibonacci numbers
+for (let i = 0; i < 10; i++) {
+    console.log(`fib(${i}) = ${fibonacci(i)}`);
+}''',
+            
+            "java": '''// Simple Java example
+public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+        
+        // More complex example
+        for (int i = 0; i < 10; i++) {
+            System.out.println("fib(" + i + ") = " + fibonacci(i));
+        }
+    }
+    
+    public static int fibonacci(int n) {
+        if (n <= 1) return n;
+        return fibonacci(n-1) + fibonacci(n-2);
+    }
+}''',
+            
+            "c": '''// Simple C example
+#include <stdio.h>
+
+// Fibonacci function
+int fibonacci(int n) {
+    if (n <= 1) return n;
+    return fibonacci(n-1) + fibonacci(n-2);
+}
+
+int main() {
+    printf("Hello, World!\\n");
+    
+    // Calculate first 10 fibonacci numbers
+    for (int i = 0; i < 10; i++) {
+        printf("fib(%d) = %d\\n", i, fibonacci(i));
+    }
+    
+    return 0;
+}''',
+            
+            "cpp": '''// Simple C++ example
+#include <iostream>
+using namespace std;
+
+// Fibonacci function
+int fibonacci(int n) {
+    if (n <= 1) return n;
+    return fibonacci(n-1) + fibonacci(n-2);
+}
+
+int main() {
+    cout << "Hello, World!" << endl;
+    
+    // Calculate first 10 fibonacci numbers
+    for (int i = 0; i < 10; i++) {
+        cout << "fib(" << i << ") = " << fibonacci(i) << endl;
+    }
+    
+    return 0;
+}''',
+            
+            "rust": '''// Simple Rust example
+fn fibonacci(n: u32) -> u32 {
+    match n {
+        0 => 0,
+        1 => 1,
+        _ => fibonacci(n-1) + fibonacci(n-2),
+    }
+}
+
+fn main() {
+    println!("Hello, World!");
+    
+    // Calculate first 10 fibonacci numbers
+    for i in 0..10 {
+        println!("fib({}) = {}", i, fibonacci(i));
+    }
+}''',
+            
+            "html": '''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hello, World!</h1>
+    <p>This is a simple HTML page.</p>
+    
+    <h2>List Example:</h2>
+    <ul>
+        <li>Item 1</li>
+        <li>Item 2</li>
+        <li>Item 3</li>
+    </ul>
+</body>
+</html>''',
+            
+            "css": '''/* Simple CSS example */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    color: #333;
+    font-size: 2.5em;
+    margin-bottom: 20px;
+}
+
+.button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.button:hover {
+    background-color: #0056b3;
+}''',
+            
+            "go": '''// Simple Go example
+package main
+
+import "fmt"
+
+func fibonacci(n int) int {
+    if n <= 1 {
+        return n
+    }
+    return fibonacci(n-1) + fibonacci(n-2)
+}
+
+func main() {
+    fmt.Println("Hello, World!")
+    
+    // Calculate first 10 fibonacci numbers
+    for i := 0; i < 10; i++ {
+        fmt.Printf("fib(%d) = %d\\n", i, fibonacci(i))
+    }
+}''',
+            
+            "php": '''<?php
+// Simple PHP example
+
+function fibonacci($n) {
+    if ($n <= 1) {
+        return $n;
+    }
+    return fibonacci($n-1) + fibonacci($n-2);
+}
+
+echo "Hello, World!\\n";
+
+// Calculate first 10 fibonacci numbers
+for ($i = 0; $i < 10; $i++) {
+    echo "fib($i) = " . fibonacci($i) . "\\n";
+}
+?>''',
+            
+            "sql": '''-- Simple SQL example
+
+-- Create a users table
+CREATE TABLE users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert sample data
+INSERT INTO users (name, email) VALUES
+    ('Alice', 'alice@example.com'),
+    ('Bob', 'bob@example.com'),
+    ('Charlie', 'charlie@example.com');
+
+-- Query users
+SELECT * FROM users WHERE name LIKE 'A%';
+
+-- Update a user
+UPDATE users SET email = 'newemail@example.com' WHERE id = 1;
+
+-- Count users
+SELECT COUNT(*) as total_users FROM users;''',
         }
         
         # Try to find matching content
@@ -370,11 +676,50 @@ class NetworkInterrogator:
         matched_key = None
         query_lower = clean_query.lower()
         
-        for key, value in knowledge_base.items():
-            if key in query_lower or query_lower in key:
-                content = value
-                matched_key = key
-                break
+        # Check if this is a code generation request
+        is_code_request = any(keyword in query_lower for keyword in ['yaz', 'write', 'create', 'generate', 'kod', 'code', 'örnek', 'example'])
+        
+        if is_code_request:
+            # Try to match programming language - check specific language keywords
+            lang_keywords = {
+                'html': ['html', 'web page', 'webpage'],
+                'css': ['css', 'style', 'stylesheet'],
+                'python': ['python', 'py'],
+                'javascript': ['javascript', 'js', 'node'],
+                'java': ['java'],
+                'c': [' c ', 'c dili', 'c code', 'c kodu'],
+                'cpp': ['c++', 'cpp'],
+                'rust': ['rust', 'rs'],
+                'go': ['go ', 'golang'],
+                'php': ['php'],
+                'sql': ['sql', 'database', 'query'],
+            }
+            
+            detected_lang = None
+            for lang, keywords in lang_keywords.items():
+                if any(kw in query_lower for kw in keywords):
+                    detected_lang = lang
+                    break
+            
+            # If no specific language detected, default to Python
+            if not detected_lang:
+                detected_lang = 'python'
+            
+            # Get code for the detected language
+            if detected_lang in code_requests:
+                content = f"Here's a {detected_lang.upper()} code example:\n\n{code_requests[detected_lang]}"
+                matched_key = f"{detected_lang}_code"
+            else:
+                # Fallback to Python
+                content = f"Here's a Python code example:\n\n{code_requests['python']}"
+                matched_key = "python_code"
+        else:
+            # Regular knowledge base lookup
+            for key, value in knowledge_base.items():
+                if key in query_lower or query_lower in key:
+                    content = value
+                    matched_key = key
+                    break
         
         if not content:
             content = (

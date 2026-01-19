@@ -22,6 +22,7 @@ class DecisionType(Enum):
     STRATEGIC = "strategic"       # Stratejik (How to achieve X?)
     ANALYTICAL = "analytical"     # Analitik (Why does X?)
     PROCEDURAL = "procedural"     # Prosedürel (How to do X?)
+    GENERATIVE = "generative"     # Üretici (Write X, Create Y, Generate Z)
 
 
 @dataclass
@@ -58,9 +59,14 @@ class IntentParser:
     def __init__(self):
         # Karar tipi tanıma için pattern'ler
         self.patterns = {
+            DecisionType.GENERATIVE: [
+                r'\bwrite\b', r'\bcreate\b', r'\bgenerate\b', r'\bmake\b',
+                r'\byaz\b', r'\boluştur\b', r'\büret\b', r'\byap\b',
+                r'\bkod\b', r'\bcode\b', r'\bexample\b', r'\börnek\b'
+            ],
             DecisionType.FACTUAL: [
                 r'\bwhat is\b', r'\bdefine\b', r'\bexplain\b',
-                r'\bnedir\b', r'\btanımla\b'
+                r'\bnedir\b', r'\btanımla\b', r'\banla\b'
             ],
             DecisionType.COMPARATIVE: [
                 r'\bcompare\b', r'\bvs\b', r'\bdifference\b',

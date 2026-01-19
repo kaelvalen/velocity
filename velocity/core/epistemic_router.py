@@ -253,6 +253,15 @@ class EpistemicRouter:
                 SourceType.CODE_REPOS,
             ])
         
+        elif intent.decision_type == DecisionType.GENERATIVE:
+            # Üretici → Kod repoları, örnekler, templates
+            candidates.extend([
+                SourceType.CODE_REPOS,
+                SourceType.QA_SITES,
+                SourceType.FORMAL_DOCS,
+                SourceType.FORUMS,
+            ])
+        
         # Kısıtlara göre ek seçimler
         if 'temporal' in intent.constraints:
             if intent.constraints['temporal'] == 'recent':
