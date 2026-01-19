@@ -27,6 +27,11 @@ loguru>=0.7.0
 python-dotenv>=1.0.0
 tenacity>=8.2.0
 
+# LLM Synthesis (Hybrid mode - optional)
+# httpx already included above for Ollama/Groq API calls
+# For local LLM: pip install ollama
+# For Groq: Set GROQ_API_KEY environment variable
+
 # Development
 pytest>=7.4.0
 pytest-asyncio>=0.21.0

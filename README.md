@@ -20,6 +20,17 @@ Velocity is **not an LLM**. It's a **Network-Native Epistemic Intelligence** - o
 
 This is not LLM replacement. This is a new paradigm. Read more: [NNEI_PARADIGM.md](./NNEI_PARADIGM.md)
 
+### NEW: Hybrid Mode 🚀
+
+**Best of Both Worlds:** Velocity now supports **Hybrid Mode** - combining NNEI fact-gathering with optional LLM synthesis for natural language output.
+
+```
+Velocity (NNEI) → Facts from web → LLM → Natural language
+Result: ChatGPT fluency + Real sources + No hallucinations
+```
+
+Read more: [HYBRID_ARCHITECTURE.md](./HYBRID_ARCHITECTURE.md)
+
 ---
 
 ## Overview
@@ -28,12 +39,13 @@ Velocity implements Network-Native Epistemic Intelligence (NNEI), a novel paradi
 
 ### Key Features
 
-- **No pre-trained models**: No stored knowledge, no outdated information
-- **No LLM dependency**: No hallucinations, only real sources
+- **Hybrid architecture**: Pure NNEI or NNEI + LLM synthesis (optional)
 - **Real-time web search**: Always current information
-- **NLP-based processing**: TF-IDF, extractive summarization, cosine similarity
+- **No hallucinations**: Facts from web, not model parameters
+- **Natural language**: Optional LLM synthesis (Ollama/Groq)
 - **7-step cognitive loop**: Transparent, auditable reasoning
 - **Epistemically sound**: Confidence calibration and source tracking
+- **CPU-only**: No GPU required for core operations
 
 ### Core Principle
 
@@ -47,7 +59,8 @@ Intelligence emerges from the speed and quality of information access, not from 
 
 - Python 3.10 or higher
 - Internet connection (for real-time web search)
-- Optional: Google/Bing API keys for enhanced search
+- Optional: Ollama (for local LLM synthesis)
+- Optional: Groq API key (for cloud LLM synthesis)
 
 ### Setup
 
@@ -65,15 +78,30 @@ pip install -r requirements.txt
 
 # Install Velocity
 pip install -e .
+
+# Optional: Install Ollama for hybrid mode (local LLM)
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull mistral:7b
 ```
 
 ### Verification
 
 ```bash
-# Run tests
-pytest tests/
+# Test pure NNEI mode
+python -c "
+import asyncio
+from velocity.core.velocity_core import VelocityCore
 
-# Expected output: 26/26 tests passing
+async def test():
+    core = VelocityCore(enable_llm=False)
+    result = await core.execute('What is Python?')
+    print(result['decision'])
+
+asyncio.run(test())
+"
+
+# Test hybrid mode (requires Ollama)
+python test_hybrid_system.py
 ```
 
 ---
@@ -120,31 +148,61 @@ def hello_world():
 
 ### Python API
 
+#### Pure NNEI Mode
 ```python
 from velocity.core.velocity_core import VelocityCore
 
-# Initialize
+# Initialize (pure NNEI, no LLM)
 core = VelocityCore(
     max_hypotheses=2,
     confidence_threshold=0.6,
-    max_iterations=3
+    max_iterations=3,
+    enable_llm=False
 )
 
 # Execute query
 result = await core.execute("What is machine learning?")
 
 # Access results
-print(result['decision'])        # Final answer
-print(result['confidence'])      # 0.0-1.0
-print(result['uncertainty'])     # LOW/MEDIUM/HIGH
+print(result['decision'])         # Raw factual answer
+print(result['confidence'])       # 0.0-1.0
+print(result['uncertainty'])      # LOW/MEDIUM/HIGH
 print(result['source_breakdown']) # Source attribution
+```
+
+#### Hybrid Mode (NNEI + LLM)
+```python
+from velocity.core.velocity_core import VelocityCore
+from velocity.synthesis.llm_synthesizer import SynthesisConfig, LLMProvider
+
+# Configure LLM synthesis
+llm_config = SynthesisConfig(
+    provider=LLMProvider.OLLAMA,  # or LLMProvider.GROQ
+    model="mistral:7b",
+    temperature=0.3
+)
+
+# Initialize hybrid mode
+core = VelocityCore(
+    llm_config=llm_config,
+    enable_llm=True  # Enable hybrid
+)
+
+# Execute query
+result = await core.execute("What is machine learning?")
+
+# Access results
+print(result['decision'])          # Natural language answer (LLM-formatted)
+print(result['raw_decision'])      # Raw NNEI answer (preserved)
+print(result['confidence'])        # 0.0-1.0
+print(result['execution_metadata']['mode'])  # 'hybrid' or 'pure_nnei'
 ```
 
 ---
 
 ## Architecture
 
-### The 7-Step Cognitive Loop
+### The 7-Step Cognitive Loop (+ Optional LLM Synthesis)
 
 Every query undergoes a structured reasoning process:
 
@@ -169,6 +227,10 @@ Every query undergoes a structured reasoning process:
       
 [7/7] STATE SYNTHESIS
       Synthesize final answer with confidence calibration
+
+[8/8] LLM SYNTHESIS (Hybrid Mode Only)
+      Optional: Format raw facts into natural language
+      Providers: Ollama (local), Groq (cloud)
 ```
 
 ### Real Web Search
@@ -198,14 +260,30 @@ No large language models are used for generation or summarization.
 
 ### Environment Variables (Optional)
 
-For enhanced search results, configure API keys:
+#### For Hybrid Mode (LLM Synthesis)
 
 ```bash
-# Google Custom Search
+# Enable hybrid mode
+export ENABLE_LLM=true
+export LLM_PROVIDER=ollama  # or groq
+
+# Ollama (local)
+export OLLAMA_HOST=http://localhost:11434
+export OLLAMA_MODEL=mistral:7b
+
+# Groq (cloud)
+export GROQ_API_KEY=your_groq_key
+export GROQ_MODEL=mixtral-8x7b-32768
+```
+
+#### For Enhanced Search
+
+```bash
+# Google Custom Search (optional)
 export GOOGLE_API_KEY="your-api-key"
 export GOOGLE_CSE_ID="your-cse-id"
 
-# Bing Search
+# Bing Search (optional)
 export BING_API_KEY="your-bing-key"
 ```
 

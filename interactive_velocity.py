@@ -7,8 +7,10 @@ Real-time Q&A with the Velocity cognitive engine.
 
 import asyncio
 from velocity.core.velocity_core import VelocityCore
+from velocity.synthesis.llm_synthesizer import SynthesisConfig, LLMProvider
 from loguru import logger
 import sys
+import os
 
 
 async def ask_velocity(question: str, core: VelocityCore) -> dict:
@@ -68,22 +70,56 @@ async def interactive_mode():
     Velocity answers using the 7-step cognitive loop.
     """
     print("\n" + "="*70)
-    print("VELOCITY - INTERACTIVE MODE")
+    print("VELOCITY - INTERACTIVE MODE (HYBRID)")
     print("="*70)
-    print("\nVelocity network-native cognitive engine")
-    print("7-step cognitive loop runs on every question!")
+    print("\nVelocity: Network-Native Epistemic Intelligence")
+    print("Mode: NNEI + Qwen3 8B (Natural Language)")
     print("\nCommands:")
     print("  - Type a question and press Enter")
     print("  - Type 'exit' or 'quit' to exit")
     print("  - Type 'help' for help")
     print("\n" + "="*70)
     
-    # Initialize Velocity (only once!)
-    core = VelocityCore(
-        max_hypotheses=2,
-        confidence_threshold=0.6,
-        max_iterations=3
+    # Configure LLM (Qwen3 8B)
+    print("\n[INIT] Checking Ollama...")
+    
+    llm_config = SynthesisConfig(
+        provider=LLMProvider.OLLAMA,
+        model="qwen3:8b",
+        temperature=0.3,
+        max_tokens=500,
+        ollama_host="http://localhost:11434",
+        fallback_to_raw=True
     )
+    
+    # Initialize Velocity with Hybrid mode
+    try:
+        core = VelocityCore(
+            max_hypotheses=2,
+            confidence_threshold=0.6,
+            max_iterations=3,
+            llm_config=llm_config,
+            enable_llm=True  # Hybrid mode
+        )
+        
+        # Check if Ollama is available
+        if core.llm_synthesizer:
+            is_available = await core.llm_synthesizer.health_check()
+            if is_available:
+                print("[OK] Qwen3 8B connected! (Hybrid mode active)")
+            else:
+                print("[WARNING] Ollama not running, using pure NNEI mode")
+                print("         (To enable hybrid: Start Ollama and restart)")
+        
+    except Exception as e:
+        print(f"[WARNING] LLM init failed: {e}")
+        print("[OK] Falling back to pure NNEI mode")
+        core = VelocityCore(
+            max_hypotheses=2,
+            confidence_threshold=0.6,
+            max_iterations=3,
+            enable_llm=False
+        )
     
     print("\n[OK] Velocity ready! You can ask questions now.")
     
@@ -106,22 +142,27 @@ async def interactive_mode():
             if user_input.lower() == 'help':
                 print("\nVELOCITY HELP")
                 print("="*70)
+                print("\nMode: Hybrid (NNEI + Qwen3 8B)")
+                print("  - Facts from web (NNEI)")
+                print("  - Natural language (Qwen3 8B)")
+                print("  - Always sourced, never hallucinates")
                 print("\nHow to use:")
                 print("  1. Type any question")
                 print("  2. Velocity will:")
                 print("     [1/7] Parse intent")
                 print("     [2/7] Route to epistemic sources")
                 print("     [3/7] Generate parallel hypotheses")
-                print("     [4/7] Interrogate network")
+                print("     [4/7] Interrogate network (web search)")
                 print("     [5/7] Handle contradictions")
                 print("     [6/7] Eliminate weak hypotheses")
                 print("     [7/7] Synthesize final state")
-                print("  3. Get calibrated answer with confidence")
+                print("     [8/8] Format with Qwen3 (natural language)")
+                print("  3. Get natural, calibrated answer with confidence")
                 print("\nExamples:")
                 print("  - What is quantum computing?")
-                print("  - Compare Python vs JavaScript")
-                print("  - Write a Python code example")
-                print("  - How does machine learning work?")
+                print("  - Python nedir?")
+                print("  - Compare React vs Vue")
+                print("  - Atatürk kimdir?")
                 print("\nCommands:")
                 print("  - 'exit' or 'quit': Exit program")
                 print("  - 'help': Show this help")
@@ -151,11 +192,30 @@ async def main():
         # Single question mode
         question = ' '.join(sys.argv[1:])
         
-        core = VelocityCore(
-            max_hypotheses=2,
-            confidence_threshold=0.6,
-            max_iterations=3
+        # Configure Qwen3 for single question too
+        llm_config = SynthesisConfig(
+            provider=LLMProvider.OLLAMA,
+            model="qwen3:8b",
+            temperature=0.3,
+            fallback_to_raw=True
         )
+        
+        try:
+            core = VelocityCore(
+                max_hypotheses=2,
+                confidence_threshold=0.6,
+                max_iterations=3,
+                llm_config=llm_config,
+                enable_llm=True
+            )
+        except:
+            # Fallback to pure NNEI
+            core = VelocityCore(
+                max_hypotheses=2,
+                confidence_threshold=0.6,
+                max_iterations=3,
+                enable_llm=False
+            )
         
         await ask_velocity(question, core)
     else:

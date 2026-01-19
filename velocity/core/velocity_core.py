@@ -32,6 +32,7 @@ from .hypothesis_eliminator import HypothesisEliminator, EliminationCriteria
 from .state_synthesizer import StateSynthesizer, SynthesizedState
 from .network_gate import NetworkGate, generate_local_response
 from ..network.interrogator import NetworkInterrogator
+from ..synthesis.llm_synthesizer import LLMSynthesizer, SynthesisConfig
 
 
 class VelocityCore:
@@ -57,7 +58,9 @@ class VelocityCore:
         max_iterations: int = 10,
         budget_per_hypothesis: float = 5.0,
         routing_budget: float = 10.0,
-        elimination_criteria: Optional[EliminationCriteria] = None
+        elimination_criteria: Optional[EliminationCriteria] = None,
+        llm_config: Optional[SynthesisConfig] = None,
+        enable_llm: bool = True
     ):
         """
         Args:
@@ -67,6 +70,8 @@ class VelocityCore:
             budget_per_hypothesis: Hipotez başına maliyet bütçesi
             routing_budget: Routing için toplam bütçe
             elimination_criteria: Eleme kriterleri
+            llm_config: LLM synthesis configuration
+            enable_llm: Enable LLM-powered natural language synthesis
         """
         # Components
         self.intent_parser = IntentParser()
@@ -95,6 +100,15 @@ class VelocityCore:
         
         # Synthesis
         self.synthesizer = StateSynthesizer()
+        
+        # LLM Synthesis (NEW: Hybrid mode)
+        self.enable_llm = enable_llm
+        if enable_llm:
+            self.llm_synthesizer = LLMSynthesizer(llm_config or SynthesisConfig())
+            logger.info("Hybrid mode ENABLED: LLM synthesis active")
+        else:
+            self.llm_synthesizer = None
+            logger.info("Pure NNEI mode: No LLM synthesis")
         
         # Config
         self.max_hypotheses = max_hypotheses
@@ -276,15 +290,48 @@ class VelocityCore:
         logger.info(f"  Alternatives: {len(final_state.alternatives)}")
         
         # ============================================
+        # STEP 8: LLM SYNTHESIS (HYBRID MODE)
+        # ============================================
+        raw_answer = final_state.decision
+        natural_answer = raw_answer
+        llm_used = False
+        
+        if self.enable_llm and self.llm_synthesizer:
+            logger.info("\n[8/8] LLM NATURAL LANGUAGE SYNTHESIS")
+            try:
+                # Extract sources from evidence
+                sources = list(set(e.source for e in final_state.evidence_summary if e.source))
+                
+                # Synthesize with LLM
+                synthesis_result = await self.llm_synthesizer.synthesize(
+                    raw_facts=raw_answer,
+                    sources=sources,
+                    query=user_input,
+                    language="auto"
+                )
+                
+                if synthesis_result['success']:
+                    natural_answer = synthesis_result['natural_answer']
+                    llm_used = True
+                    logger.info(f"  LLM synthesis successful ({synthesis_result['provider']})")
+                else:
+                    logger.warning(f"  LLM synthesis failed, using raw answer")
+                    
+            except Exception as e:
+                logger.warning(f"  LLM synthesis error: {e}, using raw answer")
+        
+        # ============================================
         # RESULT PACKAGING
         # ============================================
         logger.info(f"\n" + "=" * 70)
         logger.info(f"VELOCITY EXECUTION COMPLETE")
+        logger.info(f"  Mode: {'HYBRID (NNEI + LLM)' if llm_used else 'PURE NNEI'}")
         logger.info(f"=" * 70)
         
         result = {
             # Core output
-            "decision": final_state.decision,
+            "decision": natural_answer,  # Natural language answer (LLM-synthesized if enabled)
+            "raw_decision": raw_answer,  # Original NNEI answer (preserved)
             "confidence": final_state.confidence,
             "confidence_interval": final_state.confidence_interval,
             "uncertainty": final_state.uncertainty_level,
@@ -327,9 +374,12 @@ class VelocityCore:
             # Process info
             "synthesized_state": final_state,
             "execution_metadata": {
+                "mode": "hybrid" if llm_used else "pure_nnei",
+                "llm_used": llm_used,
                 "strategies_used": len(strategies),
                 "total_evidence": final_state.metadata.get("total_evidence", 0),
-                "synthesis_method": final_state.metadata.get("synthesis_method", "unknown")
+                "synthesis_method": final_state.metadata.get("synthesis_method", "unknown"),
+                "network_used": True
             }
         }
         
