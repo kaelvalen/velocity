@@ -1,8 +1,8 @@
 # Velocity
 
-**Network-Native, Dataset-Free General Intelligence**
+**Network-Native Epistemic Intelligence (NNEI)**
 
-> "Intelligence lives in the speed of interrogation, not in the size of memory."
+> **"Knowledge ≠ Parameters. Intelligence = Access + Evaluation + Synthesis"**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,9 +10,21 @@
 
 ---
 
+## A New Class of AI
+
+Velocity is **not an LLM**. It's a **Network-Native Epistemic Intelligence** - ontologically different from traditional AI.
+
+**Core Difference:**
+- **LLMs**: Knowledge = Parameters (frozen at training)
+- **Velocity**: Knowledge = Internet (live, accessed on demand)
+
+This is not LLM replacement. This is a new paradigm. Read more: [NNEI_PARADIGM.md](./NNEI_PARADIGM.md)
+
+---
+
 ## Overview
 
-Velocity is a novel paradigm for artificial intelligence that eliminates the need for pre-trained models and large language models. Instead of storing knowledge in parameters, Velocity accesses information in real-time through strategic network interrogation.
+Velocity implements Network-Native Epistemic Intelligence (NNEI), a novel paradigm where intelligence emerges from real-time network interrogation rather than stored parameters. Instead of storing knowledge in model weights, Velocity accesses information dynamically through strategic web search and multi-source synthesis.
 
 ### Key Features
 

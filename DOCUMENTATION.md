@@ -1,229 +1,227 @@
-# Velocity Documentation Overview
+# Velocity Documentation
 
-This document provides an overview of the Velocity documentation structure.
-
----
-
-## Core Documentation
-
-### README.md
-**Main documentation file**
-- Project overview
-- Installation instructions
-- Quick start guide
-- Architecture overview
-- API reference
-- Performance metrics
-
-**Target audience**: All users
-
-### QUICKSTART.md
-**Quick start guide**
-- 5-minute setup
-- Basic usage examples
-- Common queries
-- Troubleshooting
-
-**Target audience**: New users
-
-### PARADIGM.md
-**Conceptual explanation**
-- The Velocity paradigm
-- Core principles
-- Comparison with traditional AI
-- Technical principles
-- Philosophy
-
-**Target audience**: Researchers, architects
-
-### ALGORITHMIC_CORE.md
-**Algorithm documentation**
-- 7-step cognitive loop details
-- Implementation specifics
-- Data structures
-- Code examples
-
-**Target audience**: Developers, researchers
-
-### REAL_WEB_SEARCH.md
-**Web search implementation**
-- Search engine integration
-- NLP processing details
-- Configuration options
-- Performance characteristics
-
-**Target audience**: Developers, system administrators
+**Complete documentation for Network-Native Epistemic Intelligence (NNEI)**
 
 ---
 
-## Support Files
+## Core Documentation (Read in Order)
 
-### LICENSE
-**MIT License**
-- Usage terms
-- Redistribution rights
-- Liability disclaimer
+### 1. Start Here
+- **[README.md](./README.md)** - Project overview, quick start, installation
+- **[QUICKSTART.md](./QUICKSTART.md)** - 5-minute setup guide
 
-### requirements.txt
-**Python dependencies**
-- Required packages
-- Version specifications
-- Installation reference
+### 2. Understand the Paradigm
+- **[NNEI_PARADIGM.md](./NNEI_PARADIGM.md)** - Network-Native Epistemic Intelligence definition
+- **[PARADIGM.md](./PARADIGM.md)** - Core concepts and philosophy
 
-### pyproject.toml
-**Project metadata**
-- Package configuration
-- Build system requirements
-- Project metadata
+### 3. Technical Details
+- **[ALGORITHMIC_CORE.md](./ALGORITHMIC_CORE.md)** - 7-step cognitive loop explained
+- **[REAL_WEB_SEARCH.md](./REAL_WEB_SEARCH.md)** - Web search implementation and NLP
 
 ---
 
-## Code Files
+## File Structure
 
-### interactive_velocity.py
-**Interactive Q&A interface**
-- Command-line interface
-- Real-time question answering
-- Help system
-
-### demo_simple.py
-**Simple demonstration**
-- Quick test with one question
-- Shows basic functionality
-
-### demo_quick.py
-**Multiple question demo**
-- Several example queries
-- Demonstrates various query types
-
-### START_INTERACTIVE.bat
-**Windows launcher**
-- Activates virtual environment
-- Starts interactive mode
-- Easy double-click execution
-
----
-
-## Test Files
-
-### tests/test_algorithmic_core.py
-**Unit tests**
-- Intent parsing tests
-- Epistemic routing tests
-- Hypothesis generation tests
-- State synthesis tests
-
-### tests/test_state.py
-**State management tests**
-- Cognitive state tests
-- Evidence tracking tests
-- Contradiction handling tests
-
----
-
-## Removed Files
-
-The following temporary and redundant files have been removed:
-
-### Temporary Test Files
-- test_url_fix.py
-- test_improvements.py
-- test_code_gen.py
-- test_all_languages.py
-- test_real_web.py
-
-### Temporary Reports
-- RESTART_INSTRUCTIONS.md
-- IMPROVEMENTS_REPORT.md
-- WHAT_WORKS_NOW.md
-- MAJOR_UPGRADE.md
-- FINAL_STATUS.md
-- IMPLEMENTATION_COMPLETE.md
-- TEST_RESULTS.md
-- FINAL_REPORT.md
-
-### Redundant Documentation
-- INTERACTIVE_MODE.md (merged into QUICKSTART.md)
-- START_HERE.md (merged into README.md)
-- README_ALGORITHMIC.md (merged into ALGORITHMIC_CORE.md)
-- GET_STARTED.md (redundant with QUICKSTART.md)
-- PROJECT_SUMMARY.md (redundant with README.md)
-- PHILOSOPHY.md (merged into PARADIGM.md)
-- COMPARISON.md (merged into README.md)
-- ARCHITECTURE.md (merged into PARADIGM.md)
+```
+velocity/
+├── README.md                    # Main entry point
+├── NNEI_PARADIGM.md            # NEW: NNEI paradigm definition
+├── PARADIGM.md                  # Core paradigm concepts
+├── QUICKSTART.md                # Quick start guide
+├── REAL_WEB_SEARCH.md          # Web search & NLP details
+├── ALGORITHMIC_CORE.md         # 7-step algorithm
+├── DOCUMENTATION.md            # This file
+│
+├── requirements.txt             # Python dependencies
+├── pyproject.toml              # Package configuration
+├── LICENSE                     # MIT License
+├── env.example                 # Environment variables example
+│
+├── interactive_velocity.py     # Main interactive CLI
+├── START_INTERACTIVE.bat       # Windows launcher
+│
+├── velocity/                   # Core package
+│   ├── core/                   # Algorithmic core
+│   │   ├── intent_parser.py    # Intent classification (SOCIAL/FACTUAL/META)
+│   │   ├── network_gate.py     # Network interrogation decision
+│   │   ├── epistemic_router.py # Source selection
+│   │   ├── hypothesis_generator.py
+│   │   ├── interrogation_loop.py
+│   │   ├── hypothesis_eliminator.py
+│   │   ├── state_synthesizer.py
+│   │   ├── velocity_core.py    # Main execution engine
+│   │   └── state.py
+│   ├── network/                # Network interrogation
+│   │   ├── interrogator.py     # Query executor
+│   │   └── web_search.py       # Real web search + NLP
+│   └── evaluation/
+│       └── hypothesis.py       # CPU-based hypothesis evaluator
+│
+├── examples/                   # Example usage
+│   ├── basic_usage.py
+│   ├── interactive_demo.py
+│   └── real_internet_test.py
+│
+└── tests/                      # Unit tests
+    ├── test_algorithmic_core.py
+    └── test_state.py
+```
 
 ---
 
-## Documentation Style
+## Key Concepts
 
-All documentation follows professional standards:
+### Network-Native Epistemic Intelligence (NNEI)
 
+**Core Principle:**
+```
+Knowledge ≠ Parameters
+Intelligence = Access + Evaluation + Synthesis
+```
+
+**What makes it different:**
+- No training data (dataset-free)
+- No LLM dependency (NLP-only)
+- No GPU required (CPU-only)
+- Real-time web search (always current)
+- Full source attribution (no hallucinations)
+
+### The 7-Step Cognitive Loop
+
+1. **Intent Parsing** - Classify query type (social/factual/meta)
+2. **Network Gate** - Decide if network is needed
+3. **Epistemic Routing** - Select appropriate sources
+4. **Hypothesis Generation** - Create competing explanations
+5. **Network Interrogation** - Query sources in parallel
+6. **Contradiction Handling** - Detect conflicts
+7. **State Synthesis** - Generate calibrated answer
+
+### Smart Network Usage
+
+**Not every query needs the network:**
+- Social ("hi", "thanks") → Instant local response
+- Meta ("what are you?") → About Velocity itself
+- Factual ("Python nedir?") → Network interrogation
+
+This is **intelligent resource usage**.
+
+---
+
+## Quick Start
+
+### Installation
+```bash
+# Create virtual environment
+python -m venv venv
+venv\Scripts\activate  # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### Run Interactive Mode
+```bash
+python interactive_velocity.py
+```
+
+### Example Usage
+```python
+from velocity.core.velocity_core import VelocityCore
+
+core = VelocityCore()
+result = await core.execute("What is Python?")
+print(result['decision'])
+```
+
+---
+
+## Documentation Standards
+
+### Language
+- All documentation in English
+- All code comments in English
+- Professional, academic tone
 - No emojis
-- Formal language
-- Clear structure
-- Technical accuracy
-- Complete examples
-- Proper formatting
 
----
+### Structure
+- Clear sections with headers
+- Code examples where relevant
+- Consistent formatting
+- No redundancy
 
-## Reading Order
-
-### For New Users
-
-1. README.md (overview)
-2. QUICKSTART.md (get started)
-3. PARADIGM.md (understand concepts)
-
-### For Developers
-
-1. README.md (overview)
-2. ALGORITHMIC_CORE.md (implementation)
-3. REAL_WEB_SEARCH.md (web search)
-4. Source code in `velocity/`
-
-### For Researchers
-
-1. PARADIGM.md (concepts)
-2. ALGORITHMIC_CORE.md (algorithms)
-3. README.md (implementation)
-4. Source code analysis
-
----
-
-## Maintenance
-
-### When to Update
-
-- **README.md**: Major features, API changes
-- **QUICKSTART.md**: Installation changes, new workflows
-- **PARADIGM.md**: Conceptual changes, new principles
-- **ALGORITHMIC_CORE.md**: Algorithm changes, new steps
-- **REAL_WEB_SEARCH.md**: Search engine changes, NLP updates
-
-### Documentation Standards
-
-- Keep examples current
-- Test all code snippets
+### Maintenance
 - Update version numbers
-- Maintain consistent style
-- Cross-reference appropriately
+- Keep examples current
+- Remove outdated information
+- Maintain consistency
 
 ---
 
-## Contributing to Documentation
+## For Developers
 
-When contributing documentation:
+### Contributing
+Read the code in this order:
+1. `velocity/core/velocity_core.py` - Main engine
+2. `velocity/core/intent_parser.py` - Intent classification
+3. `velocity/core/network_gate.py` - Smart network usage
+4. `velocity/network/web_search.py` - Web search + NLP
+5. `velocity/core/state_synthesizer.py` - Answer synthesis
 
-1. Follow existing style
-2. Use professional language
-3. Provide complete examples
-4. Test all commands
-5. Update cross-references
-6. No emojis or informal language
+### Testing
+```bash
+# Run unit tests
+pytest tests/
+
+# Run interactive mode
+python interactive_velocity.py
+```
+
+### Architecture Principles
+- **Modular**: Each step is independent
+- **Testable**: All components have unit tests
+- **Transparent**: Full reasoning trace
+- **Extensible**: Easy to add new sources
 
 ---
 
-**Velocity Documentation**
+## FAQ
 
-*Complete, professional, production-ready*
+**Q: Is this an LLM?**  
+A: No. NNEI is ontologically different. It accesses knowledge, not stores it.
+
+**Q: Why not just use ChatGPT?**  
+A: ChatGPT hallucinates, is outdated (2021), and has no source tracking. Velocity doesn't hallucinate and is always current.
+
+**Q: Can it work offline?**  
+A: No. Network dependency is fundamental to the paradigm.
+
+**Q: Is it faster than LLMs?**  
+A: Social queries: Yes (500x). Factual queries: No (1-5s vs instant). But it's always accurate.
+
+**Q: Can I use it with an LLM?**  
+A: Yes! Hybrid is optimal: Small LLM + NNEI Engine = Best of both worlds.
+
+---
+
+## Version History
+
+- **0.1.0** - Initial implementation
+- **0.2.0** - Real web search added
+- **0.3.0** - NLP processing, no LLM
+- **0.3.1** - Smart system (network gate, social intents)
+- **0.4.0** - NNEI paradigm defined, CPU-only
+
+---
+
+## Resources
+
+- [Python Documentation](https://docs.python.org/)
+- [Epistemic Logic](https://en.wikipedia.org/wiki/Epistemic_modal_logic)
+- [TF-IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf)
+- [Extractive Summarization](https://en.wikipedia.org/wiki/Automatic_summarization)
+
+---
+
+**Velocity - Network-Native Epistemic Intelligence**
+
+*Intelligence through interrogation, not memorization*
