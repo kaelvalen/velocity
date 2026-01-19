@@ -64,12 +64,12 @@ Velocity maintains rich cognitive state:
 
 ### 5. Computation for Evaluation
 
-GPUs accelerate parallel hypothesis evaluation, not training:
+CPU-based parallel hypothesis evaluation:
 
-- Multiple explanations tested simultaneously
+- Multiple explanations tested concurrently
 - Early elimination of weak hypotheses
 - Deepening of promising hypotheses
-- Computation-based reasoning
+- Efficient computation-based reasoning
 
 ---
 
@@ -135,7 +135,7 @@ GPUs accelerate parallel hypothesis evaluation, not training:
 - Parallel evaluation of competing explanations
 - Evidence-based scoring
 - Early elimination of weak hypotheses
-- GPU acceleration for parallel reasoning
+- Efficient CPU-based processing
 
 #### State Synthesizer
 

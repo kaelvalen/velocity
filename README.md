@@ -358,7 +358,7 @@ Traditional AI focuses on storing knowledge in parameters. Velocity focuses on a
 
 ### From Training to Reasoning
 
-GPUs are used not for training, but for parallel hypothesis evaluation. This is computation-based reasoning, not parameter optimization.
+Computation is used for parallel hypothesis evaluation, not for training. This is reasoning-based computation, not parameter optimization.
 
 ### From Generation to Retrieval
 
