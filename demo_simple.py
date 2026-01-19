@@ -1,5 +1,5 @@
 """
-Basit demo - hemen çalışır
+Simple demo - runs immediately
 """
 
 import asyncio
@@ -7,11 +7,11 @@ import sys
 
 
 async def quick_demo():
-    """Hızlı demo"""
+    """Quick demo"""
     print("\n" + "="*70)
     print("VELOCITY - QUICK DEMO")
     print("="*70)
-    print("\nSistem hazırlanıyor...")
+    print("\nPreparing system...")
     
     try:
         from velocity.core.velocity_core import VelocityCore
@@ -21,46 +21,46 @@ async def quick_demo():
             max_iterations=2
         )
         
-        print("[OK] Velocity hazır!\n")
+        print("[OK] Velocity ready!\n")
         
-        # Basit test query
+        # Simple test query
         query = "What is Python?"
         
-        print(f"Soru: {query}")
-        print("Cevap bulunuyor...\n")
+        print(f"Question: {query}")
+        print("Finding answer...\n")
         
         result = await core.execute(query)
         
         print("="*70)
-        print("SONUC")
+        print("RESULT")
         print("="*70)
         
-        # Decision (ilk 500 karakter)
+        # Decision (first 500 characters)
         decision = result['decision']
-        print(f"\nYanıt:")
+        print(f"\nAnswer:")
         print(decision[:500])
         if len(decision) > 500:
             print("...")
         
-        print(f"\nGüven: {result['confidence']:.1%}")
-        print(f"Belirsizlik: {result.get('uncertainty', 'N/A')}")
+        print(f"\nConfidence: {result['confidence']:.1%}")
+        print(f"Uncertainty: {result.get('uncertainty', 'N/A')}")
         
         # Sources
         sources = result.get('source_breakdown', {})
-        print(f"\nKaynaklar:")
+        print(f"\nSources:")
         for source, count in sources.items():
-            print(f"  - {source}: {count} sorgu")
+            print(f"  - {source}: {count} queries")
         
         print("\n" + "="*70)
-        print("[OK] Test tamamlandı!")
+        print("[OK] Test completed!")
         print("="*70)
         
     except Exception as e:
-        print(f"\n[HATA] {e}")
+        print(f"\n[ERROR] {e}")
         import traceback
         traceback.print_exc()
 
 
 if __name__ == "__main__":
-    print("\nVelocity başlatılıyor...")
+    print("\nStarting Velocity...")
     asyncio.run(quick_demo())

@@ -1,130 +1,167 @@
 """
 VELOCITY - INTERACTIVE MODE
 
-Terminal'den soru sor, Velocity yanit versin!
+Real-time Q&A with the Velocity cognitive engine.
+7-step algorithmic loop running on every question!
 """
 
 import asyncio
-import sys
 from velocity.core.velocity_core import VelocityCore
+from loguru import logger
+import sys
 
 
-async def ask_velocity(question: str, core: VelocityCore):
-    """Velocity'ye soru sor ve yanitini goster"""
+async def ask_velocity(question: str, core: VelocityCore) -> dict:
+    """
+    Ask Velocity a question
+    
+    Args:
+        question: User question
+        core: Velocity core engine
+        
+    Returns:
+        Result dictionary
+    """
     print(f"\n{'='*70}")
-    print(f"SORU: {question}")
+    print(f"QUESTION: {question}")
     print('='*70)
-    print("\n[PROCESSING...] Velocity dusunuyor...")
+    
+    print("\n[PROCESSING...] Velocity is thinking...")
     
     try:
         result = await core.execute(question)
         
-        print(f"\n[YANIT]")
-        print(result['decision'])
+        # Display answer
+        print("\n[ANSWER]")
+        decision = result['decision']
         
-        print(f"\n[DETAYLAR]")
-        print(f"  Guven: {result['confidence']:.1%}")
-        print(f"  Belirsizlik: {result['uncertainty']}")
-        print(f"  Kanit sayisi: {len(result['evidence'])} parca")
+        # Show first 500 characters
+        if len(decision) > 500:
+            print(decision[:500] + "...")
+        else:
+            print(decision)
         
-        if result['source_breakdown']:
-            print(f"  Kaynaklar:")
-            for source, count in result['source_breakdown'].items():
-                print(f"    - {source}: {count} sorgu")
+        # Show details
+        print(f"\n[DETAILS]")
+        print(f"  Confidence: {result['confidence']:.1%}")
+        print(f"  Uncertainty: {result['uncertainty']}")
+        print(f"  Evidence count: {len(result['evidence'])} pieces")
+        
+        # Show sources
+        print(f"  Sources:")
+        for source, count in result['source_breakdown'].items():
+            print(f"    - {source}: {count} queries")
         
         print('='*70)
         
         return result
         
     except Exception as e:
-        print(f"\n[HATA] {e}")
-        print('='*70)
-        return None
+        print(f"\n[ERROR] {e}")
+        logger.error(f"Query failed: {e}")
+        raise
 
 
 async def interactive_mode():
-    """Interactive mode - soru-cevap dongusu"""
+    """
+    Interactive Q&A mode
+    
+    User can ask unlimited questions.
+    Velocity answers using the 7-step cognitive loop.
+    """
     print("\n" + "="*70)
     print("VELOCITY - INTERACTIVE MODE")
     print("="*70)
     print("\nVelocity network-native cognitive engine")
-    print("Her soruda 7 adimlik cognitive loop calisiyor!\n")
-    print("Komutlar:")
-    print("  - Soru yaz ve Enter'a bas")
-    print("  - 'exit' veya 'quit' yaz cikmak icin")
-    print("  - 'help' yaz yardim icin")
+    print("7-step cognitive loop runs on every question!")
+    print("\nCommands:")
+    print("  - Type a question and press Enter")
+    print("  - Type 'exit' or 'quit' to exit")
+    print("  - Type 'help' for help")
     print("\n" + "="*70)
     
-    # Core engine'i bir kez initialize et (performance icin)
+    # Initialize Velocity (only once!)
     core = VelocityCore(
         max_hypotheses=2,
         confidence_threshold=0.6,
-        max_iterations=3,
-        budget_per_hypothesis=3.0
+        max_iterations=3
     )
     
-    print("\n[OK] Velocity hazir! Soru sorabilirsin.\n")
+    print("\n[OK] Velocity ready! You can ask questions now.")
     
     question_count = 0
     
     while True:
         try:
-            # Kullanicidan input al
-            user_input = input(f"\n[{question_count + 1}] Sorunuz: ").strip()
+            # Get user input
+            question_count += 1
+            user_input = input(f"\n\n[{question_count}] Your question: ").strip()
             
-            # Bos input kontrolu
+            # Handle commands
             if not user_input:
                 continue
             
-            # Exit komutlari
-            if user_input.lower() in ['exit', 'quit', 'q', 'cikis']:
-                print("\n[BYE] Velocity kapatiliyor...")
-                print(f"Toplam {question_count} soru soruldu.\n")
+            if user_input.lower() in ['exit', 'quit', 'q']:
+                print("\n[OK] Goodbye!")
                 break
             
-            # Help komutu
-            if user_input.lower() in ['help', 'yardim', 'h']:
-                print("\n[HELP]")
-                print("Velocity'ye herhangi bir soru sorabilirsin:")
-                print("  - 'What is ...?' (factual)")
-                print("  - 'Compare A vs B' (comparative)")
-                print("  - 'Should I ...?' (strategic)")
-                print("  - 'How to ...?' (procedural)")
-                print("\nVelocity otomatik olarak:")
-                print("  1. Soruyu analiz eder (intent parsing)")
-                print("  2. En iyi kaynaklari secer (epistemic routing)")
-                print("  3. Paralel hipotezler uretir")
-                print("  4. Network'u sorgular")
-                print("  5. Celiski kontrol eder")
-                print("  6. Zayif hipotezleri eler")
-                print("  7. Final yaniti sentezler")
+            if user_input.lower() == 'help':
+                print("\nVELOCITY HELP")
+                print("="*70)
+                print("\nHow to use:")
+                print("  1. Type any question")
+                print("  2. Velocity will:")
+                print("     [1/7] Parse intent")
+                print("     [2/7] Route to epistemic sources")
+                print("     [3/7] Generate parallel hypotheses")
+                print("     [4/7] Interrogate network")
+                print("     [5/7] Handle contradictions")
+                print("     [6/7] Eliminate weak hypotheses")
+                print("     [7/7] Synthesize final state")
+                print("  3. Get calibrated answer with confidence")
+                print("\nExamples:")
+                print("  - What is quantum computing?")
+                print("  - Compare Python vs JavaScript")
+                print("  - Write a Python code example")
+                print("  - How does machine learning work?")
+                print("\nCommands:")
+                print("  - 'exit' or 'quit': Exit program")
+                print("  - 'help': Show this help")
+                print("="*70)
                 continue
             
-            # Soruyu sor
-            question_count += 1
+            # Process question
             await ask_velocity(user_input, core)
             
         except KeyboardInterrupt:
-            print("\n\n[INTERRUPTED] Ctrl+C algilandi.")
-            print(f"Toplam {question_count} soru soruldu.\n")
+            print("\n\n[OK] Interrupted. Goodbye!")
             break
         except EOFError:
-            print("\n\n[EOF] Input stream kapandi.")
+            print("\n\n[OK] End of input. Goodbye!")
             break
         except Exception as e:
-            print(f"\n[HATA] Beklenmeyen hata: {e}")
+            print(f"\n[ERROR] {e}")
+            logger.error(f"Interactive mode error: {e}")
             continue
 
 
 async def main():
-    """Ana fonksiyon"""
-    # Eger arguman verilmisse direkt o soruyu sor
+    """Main entry point"""
+    
+    # Check for command line arguments
     if len(sys.argv) > 1:
+        # Single question mode
         question = ' '.join(sys.argv[1:])
-        core = VelocityCore()
+        
+        core = VelocityCore(
+            max_hypotheses=2,
+            confidence_threshold=0.6,
+            max_iterations=3
+        )
+        
         await ask_velocity(question, core)
     else:
-        # Yoksa interactive mode'a gec
+        # Interactive mode
         await interactive_mode()
 
 
@@ -132,4 +169,8 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n\n[EXIT] Velocity kapatildi.\n")
+        print("\n\n[OK] Goodbye!")
+    except Exception as e:
+        print(f"\n[FATAL ERROR] {e}")
+        logger.error(f"Fatal error: {e}")
+        sys.exit(1)

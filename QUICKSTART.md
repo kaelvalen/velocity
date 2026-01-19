@@ -1,24 +1,28 @@
-# Velocity Quick Start Guide
+# VELOCITY - QUICK START GUIDE
 
-Get started with the Velocity Paradigm in 5 minutes.
+**Get up and running in 5 minutes!**
 
-## Installation
+---
 
-### 1. Clone or Download
+## 🚀 Installation
+
+### 1. Clone Repository
 
 ```bash
+git clone https://github.com/yourusername/velocity.git
 cd velocity
 ```
 
 ### 2. Create Virtual Environment
 
 ```bash
-# Windows
+# Create venv
 python -m venv venv
+
+# Activate (Windows)
 venv\Scripts\activate
 
-# Linux/Mac
-python3 -m venv venv
+# Activate (Linux/Mac)
 source venv/bin/activate
 ```
 
@@ -28,371 +32,300 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. (Optional) Install GPU Support
+### 4. Install Velocity
 
 ```bash
-pip install torch torchvision
+pip install -e .
 ```
 
-## Basic Usage
+---
 
-### Example 1: Simple Query
-
-Create a file `my_first_query.py`:
-
-```python
-import asyncio
-from velocity import VelocityEngine
-
-async def main():
-    # Initialize engine
-    engine = VelocityEngine()
-    
-    # Ask a question
-    result = await engine.interrogate("What is machine learning?")
-    
-    # Print answer
-    print(f"Answer: {result['answer']}")
-    print(f"Confidence: {result['confidence']:.1%}")
-
-asyncio.run(main())
-```
-
-Run it:
+## ✅ Verify Installation
 
 ```bash
-python my_first_query.py
-```
-
-### Example 2: With State Inspection
-
-```python
-import asyncio
-from velocity import VelocityEngine
-
-async def main():
-    engine = VelocityEngine(
-        max_parallel_queries=3,
-        confidence_threshold=0.7
-    )
-    
-    result = await engine.interrogate("How does photosynthesis work?")
-    
-    # Inspect cognitive state
-    state = result['state']
-    print(f"\nCognitive State:")
-    print(f"  Confidence: {state.confidence:.2%}")
-    print(f"  Sources: {len(state.sources_accessed)}")
-    print(f"  Contradictions: {len(state.contradictions)}")
-    print(f"  Uncertainty: {state.uncertainty.name}")
-    
-    # Show evidence
-    for topic, evidence_list in state.knowledge.items():
-        print(f"\n{topic}:")
-        for evidence in evidence_list[:3]:
-            print(f"  - {evidence.source}: {evidence.confidence:.1%}")
-
-asyncio.run(main())
-```
-
-### Example 3: Exploring Contradictions
-
-```python
-import asyncio
-from velocity import VelocityEngine
-
-async def main():
-    engine = VelocityEngine()
-    
-    # Query a controversial topic
-    result = await engine.interrogate("Is coffee healthy?")
-    
-    state = result['state']
-    
-    print(f"Found {len(state.contradictions)} contradictions:\n")
-    
-    for contradiction in state.contradictions:
-        print(f"Severity: {contradiction.severity:.2f}")
-        print(f"  A: {contradiction.claim_a[:80]}...")
-        print(f"     (from {contradiction.source_a})")
-        print(f"  B: {contradiction.claim_b[:80]}...")
-        print(f"     (from {contradiction.source_b})")
-        print()
-
-asyncio.run(main())
-```
-
-## Configuration
-
-### Via Code
-
-```python
-engine = VelocityEngine(
-    max_parallel_queries=5,      # Number of parallel searches
-    max_iterations=10,            # Maximum search iterations
-    confidence_threshold=0.7,     # Stop when confidence > this
-    use_gpu=True                  # Use GPU for evaluation
-)
-```
-
-### Via Environment Variables
-
-Create `config.env`:
-
-```bash
-MAX_PARALLEL_QUERIES=5
-MAX_ITERATIONS=10
-CONFIDENCE_THRESHOLD=0.7
-USE_GPU=true
-```
-
-Load in code:
-
-```python
-from dotenv import load_dotenv
-import os
-
-load_dotenv('config.env')
-
-engine = VelocityEngine(
-    max_parallel_queries=int(os.getenv('MAX_PARALLEL_QUERIES', 5)),
-    use_gpu=os.getenv('USE_GPU', 'false').lower() == 'true'
-)
-```
-
-## Understanding Results
-
-### Result Structure
-
-```python
-{
-    "query": "Your question",
-    "answer": "Synthesized answer",
-    "confidence": 0.75,                    # 0.0 to 1.0
-    "evidence_count": 12,                  # Number of evidence pieces
-    "sources": ["source1", "source2"],     # Sources accessed
-    "contradictions": 2,                   # Number of contradictions
-    "iterations": 5,                       # Search iterations used
-    "state": CognitiveState(...)           # Full cognitive state
-}
-```
-
-### Interpreting Confidence
-
-- **0.0 - 0.3**: Low confidence, uncertain
-- **0.3 - 0.6**: Moderate confidence
-- **0.6 - 0.8**: Good confidence
-- **0.8 - 1.0**: High confidence
-
-### Working with State
-
-```python
-state = result['state']
-
-# Check what was searched
-print(state.queries_made)
-
-# Check uncertainty for a topic
-uncertainty = state.update_uncertainty("topic")
-print(uncertainty.name)  # CERTAIN, LOW, MEDIUM, HIGH, UNKNOWN
-
-# Get state summary
-summary = state.get_summary()
-print(summary)
-```
-
-## Advanced Usage
-
-### Custom Network Sources
-
-```python
-from velocity.network.interrogator import NetworkInterrogator
-
-class MyInterrogator(NetworkInterrogator):
-    async def _execute_query(self, query, search_engine):
-        if search_engine == "my_custom_source":
-            # Implement custom source
-            return await self._query_my_source(query)
-        return await super()._execute_query(query, search_engine)
-
-# Use custom interrogator
-engine = VelocityEngine()
-engine.interrogator = MyInterrogator()
-```
-
-### State Forking for Parallel Exploration
-
-```python
-state = CognitiveState()
-
-# Fork for parallel hypothesis testing
-branch1 = state.fork()
-branch2 = state.fork()
-
-# Explore different paths
-await explore_hypothesis(branch1, "hypothesis_a")
-await explore_hypothesis(branch2, "hypothesis_b")
-
-# Compare results
-if branch1.confidence > branch2.confidence:
-    state = branch1
-else:
-    state = branch2
-```
-
-### Custom Hypothesis Evaluation
-
-```python
-from velocity.evaluation.hypothesis import HypothesisEvaluator
-
-class MyEvaluator(HypothesisEvaluator):
-    async def _score_hypothesis(self, hypothesis, state):
-        # Custom scoring logic
-        score = custom_score(hypothesis, state)
-        return score
-
-engine = VelocityEngine()
-engine.evaluator = MyEvaluator()
-```
-
-## Running Tests
-
-```bash
-# Install test dependencies
-pip install pytest pytest-asyncio
-
 # Run tests
 pytest tests/
 
-# Run specific test
-pytest tests/test_state.py -v
-
-# Run with coverage
-pytest --cov=velocity tests/
+# Should see: 26/26 tests passing ✅
 ```
 
-## Example: Complete Application
+---
 
-```python
-import asyncio
-from velocity import VelocityEngine
-from loguru import logger
+## 🎮 Run Interactive Mode
 
-class VelocityAssistant:
-    def __init__(self):
-        self.engine = VelocityEngine(
-            max_parallel_queries=5,
-            confidence_threshold=0.7,
-            use_gpu=False
-        )
-    
-    async def ask(self, question: str):
-        """Ask a question and get detailed response"""
-        logger.info(f"Question: {question}")
-        
-        result = await self.engine.interrogate(question)
-        
-        response = {
-            "answer": result['answer'],
-            "confidence": result['confidence'],
-            "sources": result['sources'],
-            "has_contradictions": result['contradictions'] > 0,
-            "evidence_count": result['evidence_count']
-        }
-        
-        return response
-    
-    async def interactive(self):
-        """Interactive mode"""
-        print("Velocity Assistant (type 'quit' to exit)")
-        print("=" * 60)
-        
-        while True:
-            question = input("\nYou: ").strip()
-            
-            if question.lower() in ['quit', 'exit', 'q']:
-                break
-            
-            if not question:
-                continue
-            
-            result = await self.ask(question)
-            
-            print(f"\nVelocity: {result['answer']}")
-            print(f"\n[Confidence: {result['confidence']:.1%} | "
-                  f"Sources: {len(result['sources'])} | "
-                  f"Evidence: {result['evidence_count']}]")
+### Option 1: Double-Click (Windows)
 
-async def main():
-    assistant = VelocityAssistant()
-    await assistant.interactive()
-
-if __name__ == "__main__":
-    asyncio.run(main())
+```
+Double-click: START_INTERACTIVE.bat
 ```
 
-## Troubleshooting
-
-### Issue: Slow queries
-
-**Solution**: Increase parallel queries or reduce timeout
-
-```python
-engine = VelocityEngine(
-    max_parallel_queries=10,  # More parallel
-    timeout=5.0                # Shorter timeout
-)
-```
-
-### Issue: Low confidence
-
-**Solution**: Increase iterations or lower threshold
-
-```python
-engine = VelocityEngine(
-    max_iterations=15,         # More iterations
-    confidence_threshold=0.6   # Lower threshold
-)
-```
-
-### Issue: GPU not working
-
-**Solution**: Check PyTorch installation
+### Option 2: Command Line
 
 ```bash
-python -c "import torch; print(torch.cuda.is_available())"
+python interactive_velocity.py
 ```
 
-If False, install CUDA-enabled PyTorch:
+---
+
+## 💡 Example Session
+
+```
+VELOCITY - INTERACTIVE MODE
+======================================================================
+
+Commands:
+  - Type a question and press Enter
+  - Type 'exit' or 'quit' to exit
+  - Type 'help' for help
+
+======================================================================
+
+[OK] Velocity ready! You can ask questions now.
+
+
+[1] Your question: What is machine learning?
+
+======================================================================
+QUESTION: What is machine learning?
+======================================================================
+
+[PROCESSING...] Velocity is thinking...
+
+[1/7] INTENT PARSING          ✅
+[2/7] EPISTEMIC ROUTING       ✅
+[3/7] HYPOTHESIS GENERATION   ✅
+[4/7] NETWORK INTERROGATION   ✅ (Real web search!)
+[5/7] CONTRADICTION HANDLING  ✅
+[6/7] HYPOTHESIS ELIMINATION  ✅
+[7/7] STATE SYNTHESIS         ✅
+
+[ANSWER]
+Machine learning is a subset of artificial intelligence that enables 
+systems to learn and improve from experience without being explicitly 
+programmed. It uses algorithms to identify patterns in data...
+
+[DETAILS]
+  Confidence: 78.0%
+  Uncertainty: LOW
+  Evidence count: 3 pieces
+  Sources:
+    - duckduckgo: 2 queries
+    - wikipedia: 1 query
+
+======================================================================
+
+[2] Your question: _
+```
+
+---
+
+## 🎯 Try These Queries
+
+### Factual Questions
+
+```
+What is quantum computing?
+Who invented Python?
+Explain neural networks
+```
+
+### Code Generation
+
+```
+write python code
+create fibonacci function
+javascript example
+```
+
+### Comparative Analysis
+
+```
+compare Python vs JavaScript
+difference between SQL and NoSQL
+React vs Vue
+```
+
+### How-To Questions
+
+```
+how to learn machine learning
+steps to deploy web app
+how does encryption work
+```
+
+---
+
+## ⚙️ Configuration (Optional)
+
+### Add API Keys for Better Results
 
 ```bash
-pip install torch --index-url https://download.pytorch.org/whl/cu118
+# Google Custom Search (optional)
+export GOOGLE_API_KEY="your-api-key"
+export GOOGLE_CSE_ID="your-cse-id"
+
+# Bing Search (optional)
+export BING_API_KEY="your-bing-key"
 ```
 
-## Next Steps
+**Without API keys:** DuckDuckGo HTML scraping works automatically! ✅
 
-1. **Read the paradigm**: `PARADIGM.md`
-2. **Understand architecture**: `ARCHITECTURE.md`
-3. **Explore examples**: `examples/`
-4. **Run tests**: `pytest tests/`
-5. **Build something!**
+---
 
-## Key Concepts to Remember
+## 📊 Understanding the Output
 
-1. **Intelligence ≠ Storage**: Velocity doesn't store knowledge
-2. **Speed Matters**: Fast interrogation > big memory
-3. **Contradictions are OK**: They signal information density
-4. **State-Driven**: Not token-by-token, but state-by-state
-5. **Always Current**: Network updates automatically
+### Answer Format
 
-## Getting Help
+```
+[ANSWER]
+<Main answer content>
 
-- Check `PARADIGM.md` for conceptual questions
-- Check `ARCHITECTURE.md` for technical details
-- Read code comments for implementation details
-- Run examples for practical usage patterns
+[DETAILS]
+  Confidence: 0-100% (How certain is Velocity?)
+  Uncertainty: LOW/MEDIUM/HIGH (Epistemic uncertainty)
+  Evidence count: Number of supporting evidence pieces
+  Sources: Where information came from
+```
 
-**Welcome to the Velocity Paradigm!**
+### Confidence Levels
 
-> Intelligence lives in the speed of interrogation,
-> not in the size of memory.
+- **70-100%**: High confidence (multiple sources agree)
+- **50-70%**: Medium confidence (some sources, limited evidence)
+- **0-50%**: Low confidence (conflicting sources, high uncertainty)
+
+### Uncertainty Levels
+
+- **LOW**: Clear answer, sources agree
+- **MEDIUM**: Some ambiguity, minor conflicts
+- **HIGH**: Significant uncertainty, major contradictions
+
+---
+
+## 🧪 Run Demos
+
+### Simple Demo
+
+```bash
+python demo_simple.py
+```
+
+Quick test with one question.
+
+### Interactive Demo
+
+```bash
+python demo_quick.py
+```
+
+Multiple example questions.
+
+---
+
+## 🔧 Troubleshooting
+
+### "Module not found" Error
+
+```bash
+# Make sure you installed Velocity
+pip install -e .
+```
+
+### Slow Performance
+
+- First query is slower (initializes NLP models)
+- Subsequent queries are faster (~1-3 seconds)
+
+### Network Errors
+
+- Check internet connection
+- DuckDuckGo/Wikipedia might be temporarily unavailable
+- Fallback systems will activate automatically
+
+---
+
+## 📚 Next Steps
+
+### Learn More
+
+- **[README.md](README.md)** - Full documentation
+- **[PARADIGM.md](PARADIGM.md)** - The Velocity paradigm
+- **[REAL_WEB_SEARCH.md](REAL_WEB_SEARCH.md)** - Web search details
+- **[FINAL_STATUS.md](FINAL_STATUS.md)** - Current status
+
+### Python API
+
+```python
+from velocity.core.velocity_core import VelocityCore
+
+# Initialize
+core = VelocityCore(
+    max_hypotheses=2,
+    confidence_threshold=0.6,
+    max_iterations=3
+)
+
+# Ask question
+result = await core.execute("What is AI?")
+
+# Access result
+print(result['decision'])        # Answer
+print(result['confidence'])      # 0.0-1.0
+print(result['uncertainty'])     # LOW/MEDIUM/HIGH
+print(result['source_breakdown']) # Sources used
+```
+
+### Customize
+
+```python
+# More hypotheses = more thorough (but slower)
+core = VelocityCore(max_hypotheses=5)
+
+# Higher threshold = only high-confidence answers
+core = VelocityCore(confidence_threshold=0.8)
+
+# More iterations = deeper search
+core = VelocityCore(max_iterations=5)
+```
+
+---
+
+## ✅ Quick Reference
+
+### Commands
+
+- `python interactive_velocity.py` - Start interactive mode
+- `python demo_simple.py` - Quick demo
+- `pytest tests/` - Run tests
+- `pip install -e .` - Install Velocity
+
+### Interactive Commands
+
+- Type question → Get answer
+- `help` → Show help
+- `exit` or `quit` → Exit
+
+### Key Features
+
+- ✅ No LLM dependency (no hallucinations)
+- ✅ Real-time web search (always current)
+- ✅ 7-step cognitive loop (transparent reasoning)
+- ✅ Confidence calibration (honest about uncertainty)
+- ✅ Multi-language support (English, Turkish, + code)
+
+---
+
+## 🎉 You're Ready!
+
+Start asking questions:
+
+```bash
+python interactive_velocity.py
+```
+
+**Velocity is ready to answer!** 🚀
+
+---
+
+*"Intelligence lives in the speed of interrogation, not in the size of memory."*
+
+**Velocity - Network-Native Intelligence** 🌐✨

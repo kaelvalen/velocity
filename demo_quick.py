@@ -1,5 +1,5 @@
 """
-Quick demo - Velocity'ye soru sor, yanitini gor!
+Quick demo - Ask Velocity a question, see the answer!
 """
 
 import asyncio
@@ -7,9 +7,9 @@ from velocity.core.velocity_core import VelocityCore
 
 
 async def ask_velocity(question: str):
-    """Velocity'ye soru sor"""
+    """Ask Velocity a question"""
     print(f"\n{'='*70}")
-    print(f"SORU: {question}")
+    print(f"QUESTION: {question}")
     print('='*70)
     
     core = VelocityCore(
@@ -20,14 +20,14 @@ async def ask_velocity(question: str):
     
     result = await core.execute(question)
     
-    print(f"\n[YANIT]")
+    print(f"\n[ANSWER]")
     print(result['decision'])
     
-    print(f"\n[DETAYLAR]")
-    print(f"  Guven: {result['confidence']:.1%}")
-    print(f"  Belirsizlik: {result['uncertainty']}")
-    print(f"  Kanit: {len(result['evidence'])} parca")
-    print(f"  Kaynaklar: {', '.join(result['source_breakdown'].keys())}")
+    print(f"\n[DETAILS]")
+    print(f"  Confidence: {result['confidence']:.1%}")
+    print(f"  Uncertainty: {result['uncertainty']}")
+    print(f"  Evidence: {len(result['evidence'])} pieces")
+    print(f"  Sources: {', '.join(result['source_breakdown'].keys())}")
     
     print('='*70)
     
@@ -35,12 +35,12 @@ async def ask_velocity(question: str):
 
 
 async def main():
-    print("\nVELOCITY - INTERAKTIF DEMO")
-    print("Velocity sorunuza yanit veriyor...\n")
+    print("\nVELOCITY - INTERACTIVE DEMO")
+    print("Velocity answering your questions...\n")
     
-    # Ornek sorular
+    # Example questions
     questions = [
-        "What is pornography?",
+        "What is machine learning?",
         "Explain quantum entanglement",
         "Who created Python programming language?"
     ]
@@ -49,8 +49,8 @@ async def main():
         await ask_velocity(q)
         print("\n")
     
-    print("\n[OK] Demo tamamlandi!")
-    print("\nVelocity calisiyor ve yanit veriyor! ✓")
+    print("\n[OK] Demo completed!")
+    print("\nVelocity is working and answering! ✓")
 
 
 if __name__ == "__main__":

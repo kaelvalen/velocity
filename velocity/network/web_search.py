@@ -307,11 +307,15 @@ class WebSearchEngine:
     
     async def _fetch_content(self, url: str) -> str:
         """
-        URL'den içerik çek ve temizle
+        Fetch and clean content from URL
         
-        Bu NLP işleminin ilk adımı: raw HTML'den text extraction
+        This is the first step of NLP processing: raw HTML to text extraction
         """
         try:
+            # Fix protocol-relative URLs (// -> https://)
+            if url.startswith('//'):
+                url = 'https:' + url
+            
             response = requests.get(
                 url,
                 headers=self.headers,
@@ -333,7 +337,7 @@ class WebSearchEngine:
             # Clean up whitespace
             text = re.sub(r'\s+', ' ', text)
             
-            # Limit length (ilk 5000 karakter)
+            # Limit length (first 5000 characters)
             return text[:5000]
             
         except Exception as e:
