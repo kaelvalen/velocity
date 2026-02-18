@@ -31,6 +31,8 @@ from .interrogation_loop import ParallelInterrogationEngine, InterrogationResult
 from .hypothesis_eliminator import HypothesisEliminator, EliminationCriteria
 from .state_synthesizer import StateSynthesizer, SynthesizedState
 from .network_gate import NetworkGate, generate_local_response
+from .cache import QueryCache
+from .conversation import ConversationBuffer
 from ..network.interrogator import NetworkInterrogator
 from ..synthesis.llm_synthesizer import LLMSynthesizer, SynthesisConfig
 
@@ -60,7 +62,10 @@ class VelocityCore:
         routing_budget: float = 10.0,
         elimination_criteria: Optional[EliminationCriteria] = None,
         llm_config: Optional[SynthesisConfig] = None,
-        enable_llm: bool = True
+        enable_llm: bool = True,
+        cache_size: int = 256,
+        cache_ttl: float = 300.0,
+        allow_creative: bool = False
     ):
         """
         Args:
@@ -75,7 +80,7 @@ class VelocityCore:
         """
         # Components
         self.intent_parser = IntentParser()
-        self.network_gate = NetworkGate()
+        self.network_gate = NetworkGate(allow_creative=allow_creative)
         self.epistemic_router = EpistemicRouter()
         self.hypothesis_generator = HypothesisGenerator(max_hypotheses=max_hypotheses)
         
@@ -114,13 +119,22 @@ class VelocityCore:
         self.max_hypotheses = max_hypotheses
         self.confidence_threshold = confidence_threshold
         self.routing_budget = routing_budget
+
+        # Query cache
+        self.cache = QueryCache(max_size=cache_size, ttl_seconds=cache_ttl)
+        logger.info(f"Query cache enabled (size={cache_size}, ttl={cache_ttl}s)")
+
+        # Conversation memory
+        self.conversation = ConversationBuffer()
+        logger.info("Conversation memory enabled")
         
         logger.info("Velocity Core Engine initialized")
     
     async def execute(
         self,
         user_input: str,
-        system_goal: str = "answer"
+        system_goal: str = "answer",
+        session_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Ana execution loop
@@ -136,12 +150,37 @@ class VelocityCore:
         logger.info(f"VELOCITY EXECUTION START")
         logger.info(f"Input: {user_input[:100]}...")
         logger.info(f"=" * 70)
-        
+
+        # ============================================
+        # CONVERSATION CONTEXT
+        # ============================================
+        enriched_input = user_input
+        if session_id:
+            self.conversation.add_user_turn(session_id, user_input)
+            enriched_input = self.conversation.enrich_query(session_id, user_input)
+            if enriched_input != user_input:
+                logger.info(f"[CONVERSATION] Context prepended ({len(enriched_input) - len(user_input)} chars added)")
+
+        # ============================================
+        # CACHE CHECK
+        # ============================================
+        cached = self.cache.get(enriched_input)
+        if cached is not None:
+            logger.info("[CACHE HIT] Returning cached result")
+            cached['execution_metadata']['cache_hit'] = True
+            if session_id:
+                self.conversation.add_assistant_turn(
+                    session_id,
+                    cached.get('decision', ''),
+                    confidence=cached.get('confidence')
+                )
+            return cached
+
         # ============================================
         # STEP 1: INTENT PARSING
         # ============================================
         logger.info("\n[1/7] INTENT PARSING")
-        intent = self.intent_parser.parse(user_input, system_goal)
+        intent = self.intent_parser.parse(enriched_input, system_goal)
         logger.info(f"  Goal: {intent.goal[:60]}...")
         logger.info(f"  Type: {intent.decision_type.value}")
         logger.info(f"  Uncertainty: {intent.uncertainty:.2f}")
@@ -279,6 +318,9 @@ class VelocityCore:
         # STEP 7: STATE SYNTHESIS
         # ============================================
         logger.info("\n[7/7] STATE SYNTHESIS")
+
+        # Pass the original query to the synthesizer so AnswerEngine can use it
+        self.synthesizer.set_query(user_input)
         
         final_state = self.synthesizer.synthesize(surviving, eliminated)
         
@@ -379,9 +421,21 @@ class VelocityCore:
                 "strategies_used": len(strategies),
                 "total_evidence": final_state.metadata.get("total_evidence", 0),
                 "synthesis_method": final_state.metadata.get("synthesis_method", "unknown"),
-                "network_used": True
+                "network_used": True,
+                "cache_hit": False
             }
         }
+
+        # Store in cache for future identical queries
+        self.cache.set(enriched_input, result)
+
+        # Record assistant turn in conversation memory
+        if session_id:
+            self.conversation.add_assistant_turn(
+                session_id,
+                result.get('decision', ''),
+                confidence=result.get('confidence')
+            )
         
         return result
     

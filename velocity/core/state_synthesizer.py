@@ -22,6 +22,7 @@ import statistics
 
 from .hypothesis_generator import Hypothesis
 from .state import CognitiveState, Evidence, Contradiction
+from .nlp_engine import AnswerEngine, StructuredAnswer, render_answer
 
 
 # Simple NLP for answer synthesis
@@ -80,6 +81,8 @@ class SynthesizedState:
     contributing_hypotheses: List[str]         # Katkıda bulunan hipotezler
     eliminated_hypotheses: List[str]           # Elenen hipotezler
     
+    structured_answer: Optional[StructuredAnswer] = None  # NLP-engine answer artifact
+    
     metadata: Dict[str, Any] = field(default_factory=dict)
     
     def __repr__(self) -> str:
@@ -99,7 +102,12 @@ class StateSynthesizer:
     """
     
     def __init__(self):
-        pass
+        self.answer_engine = AnswerEngine()
+        self._current_query: Optional[str] = None
+
+    def set_query(self, query: str) -> None:
+        """Set the current user query (called by VelocityCore before synthesis)."""
+        self._current_query = query
     
     def synthesize(
         self,
@@ -121,7 +129,7 @@ class StateSynthesizer:
             return self._create_empty_state(eliminated)
         
         # 1. Ana kararı belirle
-        decision = self._determine_decision(hypotheses)
+        decision, structured_answer = self._determine_decision(hypotheses)
         
         # 2. Güven skorunu hesapla
         confidence = self._aggregate_confidence(hypotheses)
@@ -164,54 +172,63 @@ class StateSynthesizer:
             source_breakdown=source_breakdown,
             contributing_hypotheses=[h.id for h in hypotheses],
             eliminated_hypotheses=[h.id for h in eliminated],
+            structured_answer=structured_answer,
             metadata=metadata
         )
     
-    def _determine_decision(self, hypotheses: List[Hypothesis]) -> str:
+    def _determine_decision(self, hypotheses: List[Hypothesis]):
         """
-        Determine final decision with natural, ChatGPT-like answer
-        
-        Synthesizes evidence into coherent answer using NLP
+        Determine final decision using the AnswerEngine (pure NLP, no LLM).
+
+        Returns:
+            (decision_text, structured_answer)
         """
+        from .nlp_engine import AnswerEngine, StructuredAnswer, render_answer
+
         if not hypotheses:
-            return "I couldn't find enough information to answer your question."
-        
-        # Get best hypothesis
-        best = max(hypotheses, key=lambda h: h.confidence)
-        
-        # Collect all evidence content
-        all_evidence_texts = []
-        all_evidence = []
-        
-        for evidence_list in best.state.knowledge.values():
-            for evidence in evidence_list:
-                all_evidence.append(evidence)
-                # Extract and clean text
-                clean_content = self._clean_evidence_text(evidence.content)
-                if clean_content:
-                    all_evidence_texts.append(clean_content)
-        
-        # Sort evidence by confidence
-        all_evidence.sort(key=lambda e: e.confidence, reverse=True)
-        
-        # Create natural answer
-        if not all_evidence_texts:
-            return "I found some results but couldn't extract clear information."
-        
-        # Combine and clean all content
-        combined_text = ' '.join(all_evidence_texts)
-        combined_text = self._deep_clean_text(combined_text)
-        
-        # Generate summary (4-5 sentences for richer answer)
-        summary = simple_summarize([combined_text], max_sentences=4)
-        
-        # Format naturally (add spacing, clean up)
-        natural_answer = self._naturalize_answer(summary)
-        
-        # Add subtle source attribution
-        source_note = self._format_sources(all_evidence[:3])
-        
-        return f"{natural_answer}\n\n{source_note}"
+            empty = StructuredAnswer(
+                summary="I couldn't find enough information to answer your question.",
+                key_facts=[], entities=[], sources=[],
+                query_type="general", confidence_label="Very Low", confidence=0.0,
+            )
+            return empty.summary, empty
+
+        query = self._current_query or ""
+
+        # Collect raw evidence texts + source labels from ALL surviving hypotheses
+        raw_texts: list[str] = []
+        sources: list[str] = []
+
+        for h in hypotheses:
+            for evidence_list in h.state.knowledge.values():
+                for ev in evidence_list:
+                    if ev.content and len(ev.content) > 30:
+                        raw_texts.append(ev.content)
+                    if ev.source:
+                        sources.append(ev.source)
+
+        if not raw_texts:
+            empty = StructuredAnswer(
+                summary="I found some results but couldn't extract clear information.",
+                key_facts=[], entities=[], sources=sources,
+                query_type="general", confidence_label="Low", confidence=0.1,
+            )
+            return empty.summary, empty
+
+        # Aggregate confidence for the render
+        avg_conf = sum(h.confidence for h in hypotheses) / len(hypotheses)
+
+        # Run the full NLP pipeline
+        structured = self.answer_engine.synthesize(
+            raw_texts=raw_texts,
+            query=query,
+            sources=list(set(sources)),
+            confidence=avg_conf,
+        )
+
+        # Render to final text
+        rendered = render_answer(structured)
+        return rendered, structured
     
     def _clean_evidence_text(self, text: str) -> str:
         """Initial cleaning of evidence text"""

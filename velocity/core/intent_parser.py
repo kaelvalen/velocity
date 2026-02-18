@@ -160,12 +160,17 @@ class IntentParser:
         )
     
     def _extract_goal(self, user_input: str, system_goal: str) -> str:
-        """Ana hedefi çıkar"""
+        """
+        Ana hedefi çıkar.
+
+        The goal must be the *clean user query* — no prefixes added.
+        system_goal is kept in context['system_goal'] only.
+        """
         # Basit: ilk cümle veya tüm input
         sentences = user_input.split('.')
         main_sentence = sentences[0].strip()
-        
-        return f"{system_goal}: {main_sentence}"
+
+        return main_sentence
     
     def _extract_subgoals(self, user_input: str, goal: str) -> List[str]:
         """Alt hedefleri çıkar"""

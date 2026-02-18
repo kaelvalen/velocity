@@ -20,14 +20,19 @@ class NetworkGate:
     """
     
     # Intent types that NEVER need network
-    NO_NETWORK_INTENTS = {
+    ALWAYS_LOCAL_INTENTS = {
         DecisionType.SOCIAL,
         DecisionType.META,
-        DecisionType.CREATIVE
     }
     
-    def __init__(self):
-        pass
+    def __init__(self, allow_creative: bool = False):
+        """
+        Args:
+            allow_creative: When True, CREATIVE intents are passed through
+                            to the network interrogation pipeline instead of
+                            being declined with a static message.
+        """
+        self.allow_creative = allow_creative
     
     def should_interrogate(
         self,
@@ -63,14 +68,22 @@ class NetworkGate:
                 'response_mode': 'local_meta'
             }
         
-        # Rule 3: Creative intents → No network (Velocity doesn't tell stories)
+        # Rule 3: Creative intents — configurable
         if intent.decision_type == DecisionType.CREATIVE:
-            logger.info("Network gate: SKIP (creative intent)")
-            return {
-                'interrogate': False,
-                'reason': 'creative_intent',
-                'response_mode': 'local_decline'
-            }
+            if self.allow_creative:
+                logger.info("Network gate: INTERROGATE (creative allowed by config)")
+                return {
+                    'interrogate': True,
+                    'reason': 'creative_allowed',
+                    'response_mode': 'network_interrogation'
+                }
+            else:
+                logger.info("Network gate: SKIP (creative intent, allow_creative=False)")
+                return {
+                    'interrogate': False,
+                    'reason': 'creative_intent',
+                    'response_mode': 'local_decline'
+                }
         
         # Rule 4: High local confidence → Skip network
         if local_confidence > 0.8:
@@ -153,14 +166,17 @@ I don't use LLMs - just NLP and real web search. Ask me anything factual!"""
 
 
 def _decline_creative(query: str) -> str:
-    """Politely decline creative requests"""
-    return """I'm designed for factual information retrieval, not creative content generation. 
-
-I can help you with:
-- Factual questions (What is X?)
-- Comparisons (X vs Y)
-- Technical information
-- Current events
-- Code examples
-
-Try asking me something factual instead!"""
+    """Politely decline creative requests (when allow_creative=False)"""
+    return (
+        "Velocity is optimised for factual information retrieval.\n\n"
+        "Creative content generation is disabled by default because it requires an LLM — "
+        "pass `allow_creative=True` when constructing NetworkGate (or set "
+        "`ALLOW_CREATIVE=true` in your .env) to route these queries through "
+        "the network interrogation pipeline instead.\n\n"
+        "I *can* help you with:\n"
+        "- Factual questions (What is X?)\n"
+        "- Comparisons (X vs Y)\n"
+        "- Technical information\n"
+        "- Current events\n"
+        "- Code examples"
+    )

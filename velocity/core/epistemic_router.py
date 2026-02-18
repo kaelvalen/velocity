@@ -328,25 +328,30 @@ class EpistemicRouter:
         intent: IntentGraph
     ) -> str:
         """
-        Kaynak tipi ve intent'e göre query template oluştur
-        
-        Bu, gerçek sorgu sırasında doldurulacak bir şablondur
+        Kaynak tipi ve intent'e göre query template oluştur.
+
+        IMPORTANT: The goal is already the clean user query (no "answer:" prefix).
+        Most source types should use the *raw query* directly; adding prefixes
+        usually HURTS search quality on DuckDuckGo / Google.  We only add
+        a prefix when it genuinely helps (e.g. "site:github.com" for code repos).
         """
         goal = intent.goal
-        
+
+        # For simple factual / biographical queries, search the raw query.
+        # Source-specific prefixes are only useful for a few specialised types.
         templates = {
-            SourceType.ENCYCLOPEDIC: f"{goal}",
-            SourceType.ACADEMIC: f"scholarly {goal}",
-            SourceType.FORUMS: f"discussion {goal}",
-            SourceType.NEWS: f"latest {goal}",
-            SourceType.QA_SITES: f"how to {goal}",
-            SourceType.FORMAL_DOCS: f"documentation {goal}",
-            SourceType.CODE_REPOS: f"code {goal}",
-            SourceType.LIVE_DATA: f"current {goal}",
-            SourceType.SOCIAL: f"opinion {goal}",
-            SourceType.GOVERNMENT: f"official {goal}",
+            SourceType.ENCYCLOPEDIC: goal,
+            SourceType.ACADEMIC: f"{goal} research paper",
+            SourceType.FORUMS: goal,
+            SourceType.NEWS: f"{goal} latest news",
+            SourceType.QA_SITES: goal,
+            SourceType.FORMAL_DOCS: goal,
+            SourceType.CODE_REPOS: f"{goal} site:github.com",
+            SourceType.LIVE_DATA: f"{goal} current data",
+            SourceType.SOCIAL: goal,
+            SourceType.GOVERNMENT: f"{goal} site:gov",
         }
-        
+
         return templates.get(source_type, goal)
     
     def _calculate_base_priority(

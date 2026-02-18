@@ -7,13 +7,12 @@ Velocity'nin asıl gücü: LLM yok, sadece web'den bilgi çekip NLP ile işle.
 "Intelligence lives in the speed of interrogation, not in the size of memory."
 """
 
-import requests
+import httpx
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 import re
-from urllib.parse import quote_plus, urljoin
+from urllib.parse import quote_plus
 from bs4 import BeautifulSoup
-import time
 from loguru import logger
 
 
@@ -53,10 +52,29 @@ class WebSearchEngine:
         self.max_results = max_results
         self.timeout = timeout
         
+        # Shared async HTTP client (never blocks event loop)
+        self._client: Optional[httpx.AsyncClient] = None
+        
         # User agent for web scraping
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        """Lazy-initialize shared async client."""
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(
+                headers=self.headers,
+                timeout=self.timeout,
+                follow_redirects=True
+            )
+        return self._client
+
+    async def close(self) -> None:
+        """Close the shared HTTP client."""
+        if self._client and not self._client.is_closed:
+            await self._client.aclose()
     
     async def search(self, query: str, source_type: str = "web") -> List[SearchResult]:
         """
@@ -131,7 +149,7 @@ class WebSearchEngine:
             'num': self.max_results
         }
         
-        response = requests.get(url, params=params, timeout=self.timeout)
+        response = await self.client.get(url, params=params)
         response.raise_for_status()
         
         data = response.json()
@@ -158,11 +176,10 @@ class WebSearchEngine:
             'count': self.max_results
         }
         
-        response = requests.get(
+        response = await self.client.get(
             url,
             headers=headers,
-            params=params,
-            timeout=self.timeout
+            params=params
         )
         response.raise_for_status()
         
@@ -187,11 +204,7 @@ class WebSearchEngine:
         """
         url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
         
-        response = requests.get(
-            url,
-            headers=self.headers,
-            timeout=self.timeout
-        )
+        response = await self.client.get(url)
         response.raise_for_status()
         
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -250,11 +263,10 @@ class WebSearchEngine:
                 'User-Agent': 'Velocity-Search'
             }
             
-            response = requests.get(
+            response = await self.client.get(
                 gh_url,
                 params=params,
-                headers=headers,
-                timeout=self.timeout
+                headers=headers
             )
             
             if response.status_code == 200:
@@ -280,10 +292,9 @@ class WebSearchEngine:
                 'pagesize': 3
             }
             
-            response = requests.get(
+            response = await self.client.get(
                 so_url,
-                params=params,
-                timeout=self.timeout
+                params=params
             )
             
             if response.status_code == 200:
@@ -316,12 +327,7 @@ class WebSearchEngine:
             if url.startswith('//'):
                 url = 'https:' + url
             
-            response = requests.get(
-                url,
-                headers=self.headers,
-                timeout=self.timeout,
-                allow_redirects=True
-            )
+            response = await self.client.get(url)
             response.raise_for_status()
             
             # Parse HTML

@@ -157,30 +157,31 @@ class InterrogationLoop:
         """
         State bazlı karar: bir sonraki sorgu ne olmalı?
         
-        Bu kritik: Neyi bildiğimize ve neyi bilmediğimize göre
-        bir sonraki sorguyu seçer.
+        IMPORTANT: The query template already contains the clean user query.
+        Follow-up queries should be *reformulations* of the same topic,
+        NOT prefix noise like "alternative view" or "detailed".
         """
         from .state import UncertaintyLevel
         
         state = hypothesis.state
+        base_query = hypothesis.source_strategy.query_template
         
         # 1. Hiç evidence yoksa, base query
         if not state.knowledge:
-            return hypothesis.source_strategy.query_template
+            return base_query
         
-        # 2. Uncertainty hala yüksekse, daha fazla kaynak
+        # 2. Uncertainty hala yüksekse, farklı formülasyon dene
         if state.uncertainty == UncertaintyLevel.HIGH:
-            # Farklı açıdan sor
-            return f"alternative view {hypothesis.source_strategy.query_template}"
+            # Strip any question words and try a simpler form
+            return base_query
         
-        # 3. Contradictions varsa, çözümlemeye çalış
+        # 3. Contradictions varsa, doğrulamaya çalış
         if state.contradictions:
-            latest_contradiction = state.contradictions[-1]
-            return f"clarify {latest_contradiction.claim_a[:50]}"
+            return base_query
         
-        # 4. Confidence düşükse, derinleştir
+        # 4. Confidence düşükse, aynı sorguyu tekrar dene (farklı sonuçlar gelebilir)
         if state.confidence < 0.5:
-            return f"detailed {hypothesis.source_strategy.query_template}"
+            return base_query
         
         # 5. Yeterli bilgi toplandı
         return None
